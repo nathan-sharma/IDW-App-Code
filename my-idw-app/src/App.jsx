@@ -3,29 +3,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Main App component
 const App = () => {
     // State to hold the measured data points (latitude, longitude, moisture)
-    // Initially, this will be dummy data. You'll replace this with your actual CSV data.
     const [measuredData, setMeasuredData] = useState([
         // Dummy Data for a small field (similar to your 150x150 ft / 45x45m area)
         // These approximate coordinates are for demonstration purposes.
         // They simulate a 5x5 grid for a very small area to show variability.
         // Format: [latitude, longitude, moisture_value]
-        [29.6000, -95.7500, 50], // Center
-        [29.6005, -95.7495, 55], // North-East
-        [29.5995, -95.7495, 45], // South-East
-        [29.5995, -95.7505, 60], // South-West
-        [29.6005, -95.7505, 40], // North-West
-
-        [29.6002, -95.7502, 52], // Near center
-        [29.6007, -95.7498, 58], // North-East inner
-        [29.5998, -95.7498, 48], // South-East inner
-        [29.5998, -95.7502, 62], // South-West inner
-        [29.6002, -95.7498, 43], // North-West inner
-
-        [29.6000, -95.7498, 51], // A few more random points
-        [29.6003, -95.7503, 49],
-        [29.5997, -95.7501, 57],
-        [29.6001, -95.7501, 53],
-        [29.5999, -95.7499, 46],
+       
     ]);
 
     // State to hold the interpolated grid values
@@ -187,6 +170,43 @@ const App = () => {
 
     }, [interpolatedGrid, measuredData, getColor]);
 
+    // Function to handle file upload
+    const handleFileUpload = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const text = e.target.result;
+                parseDataAndSetState(text);
+            };
+            reader.readAsText(file);
+        }
+    };
+
+    // Function to parse the CSV/text data
+    const parseDataAndSetState = (text) => {
+        const lines = text.split('\n').filter(line => line.trim() !== ''); // Split by line and remove empty lines
+        const parsedData = lines.map(line => {
+            const parts = line.split(','); // Assuming comma-separated values
+            if (parts.length === 3) {
+                const lat = parseFloat(parts[0]);
+                const lon = parseFloat(parts[1]);
+                const moisture = parseFloat(parts[2]);
+                if (!isNaN(lat) && !isNaN(lon) && !isNaN(moisture)) {
+                    return [lat, lon, moisture];
+                }
+            }
+            return null; // Return null for invalid lines
+        }).filter(item => item !== null); // Filter out any null entries from invalid lines
+
+        if (parsedData.length > 0) {
+            setMeasuredData(parsedData);
+        } else {
+            alert("No valid data found in the uploaded file. Please ensure it's a CSV/text file with 'latitude,longitude,moisture' format.");
+        }
+    };
+
+
     return (
         <div className="font-inter text-gray-800 flex flex-col items-center justify-center">
             {/* The script and link tags for Tailwind and Inter font are not needed here
@@ -227,7 +247,16 @@ const App = () => {
             </h1>
 
             <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-xl mb-8">
-                {/* This div was empty, can be used for controls or information */}
+                <h2 className="text-2xl font-medium text-gray-700 mb-4">Upload Data</h2>
+                <input
+                    type="file"
+                    accept=".csv, .txt"
+                    onChange={handleFileUpload}
+                    className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                    Upload a CSV or text file with data in the format: `latitude, longitude, moisture_value` per line. Example: 29.7455, -95.7797, 50.00
+                </p>
             </div>
 
             <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-xl canvas-container">
@@ -249,19 +278,8 @@ const App = () => {
                 </div>
                 <p className="text-sm text-gray-500 mt-4">
                     The heatmap visualizes estimated soil moisture. Lighter areas represent lower moisture, darker areas represent higher moisture.
-                    Red circles indicate your original measured data points.
+                
                 </p>
-            </div>
-
-            <div className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-xl mt-8">
-                <h2 className="text-2xl font-medium text-gray-700 mb-4">How to Use Your Own Data</h2>
-                <ol className="list-decimal list-inside text-gray-700 space-y-2">
-                    <li>After collecting real data with your Raspberry Pi, transfer your `sensor_data.csv` file (using the new format) to your computer.</li>
-                    <li>Open this React code.</li>
-                    <li>**Replace the `measuredData` array** within the `useState` hook (around line 10-25) with your actual data. You'll need to parse your CSV data into a JavaScript array of `[latitude, longitude, moisture_value]` format.</li>
-                    <li>For example, if your CSV has data like `latitude1,longitude1,moisture1` per line, you would parse each line into `[latitude1, longitude1, moisture1]`.</li>
-                    <li>Save the updated React code, and the heatmap will automatically update with your real data.</li>
-                </ol>
             </div>
         </div>
     );
