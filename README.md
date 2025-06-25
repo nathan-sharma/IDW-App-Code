@@ -1,0 +1,1 @@
+Our app utilizes Inverse Distance Weighted Interpolation to generate a dynamically adjusting "heatmap" of data points by using collected data points to calculate the weighted average (estimated value) of every point on our grid. 
